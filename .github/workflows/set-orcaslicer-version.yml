@@ -1,0 +1,103 @@
+name: Set OrcaSlicer version
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "LinuxServer.io OrcaSlicer tag (example: v2.4.2-ls42)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  set-version:
+    name: Pin requested version
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate requested image
+        env:
+          VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${VERSION}" || "${VERSION}" == "latest" ]]; then
+            echo "Provide an explicit immutable LinuxServer.io tag."
+            exit 1
+          fi
+
+          image="lscr.io/linuxserver/orcaslicer:${VERSION}"
+          echo "Checking ${image}"
+
+          docker buildx imagetools inspect "${image}" >/dev/null
+
+          raw="$(docker buildx imagetools inspect --raw "${image}")"
+
+          jq -e '
+            [.manifests[]?.platform |
+              select(.os == "linux") |
+              .architecture
+            ] |
+            (index("amd64") != null) and (index("arm64") != null)
+          ' <<<"${raw}" >/dev/null
+
+      - name: Update app version
+        env:
+          VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          current="$(
+            sed -nE 's/^version:[[:space:]]*"([^"]+)".*/\1/p'               orcaslicer/config.yaml
+          )"
+
+          sed -i -E             "s/^version:[[:space:]]*\"[^\"]+\"/version: \"${VERSION}\"/"             orcaslicer/config.yaml
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+
+          path = Path("orcaslicer/CHANGELOG.md")
+          version = os.environ["VERSION"]
+          text = path.read_text(encoding="utf-8") if path.exists() else "# Changelog\n"
+
+          heading = f"## {version}"
+          if heading not in text:
+              entry = (
+                  f"{heading}\n\n"
+                  "- Version manually selected through the GitHub Actions workflow.\n\n"
+              )
+              if text.startswith("# Changelog"):
+                  rest = text[len("# Changelog"):].lstrip("\n")
+                  text = "# Changelog\n\n" + entry + rest
+              else:
+                  text = "# Changelog\n\n" + entry + text
+              path.write_text(text, encoding="utf-8")
+          PY
+
+      - name: Commit requested version
+        env:
+          VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add orcaslicer/config.yaml orcaslicer/CHANGELOG.md
+
+          if git diff --cached --quiet; then
+            echo "Already pinned to ${VERSION}."
+            exit 0
+          fi
+
+          git commit -m "Pin OrcaSlicer app to ${VERSION}"
+          git push

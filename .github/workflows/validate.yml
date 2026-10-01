@@ -1,0 +1,91 @@
+name: Validate Home Assistant App
+
+on:
+  push:
+    paths:
+      - "orcaslicer/**"
+      - "repository.yaml"
+      - ".github/workflows/**"
+      - ".github/dependabot.yml"
+  pull_request:
+    paths:
+      - "orcaslicer/**"
+      - "repository.yaml"
+      - ".github/workflows/**"
+      - ".github/dependabot.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate app metadata
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate YAML and image tag
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python3 -m pip install             --disable-pip-version-check             --quiet             pyyaml
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          repo = yaml.safe_load(Path("repository.yaml").read_text())
+          cfg = yaml.safe_load(Path("orcaslicer/config.yaml").read_text())
+
+          if not isinstance(repo, dict) or not repo.get("name"):
+              raise SystemExit("repository.yaml must contain a name")
+
+          required = {
+              "name", "version", "slug", "description",
+              "arch", "image", "ingress", "ingress_port"
+          }
+          missing = required - set(cfg)
+          if missing:
+              raise SystemExit(f"Missing config keys: {sorted(missing)}")
+
+          if cfg["image"] != "lscr.io/linuxserver/orcaslicer":
+              raise SystemExit("Unexpected image")
+
+          if cfg["version"] == "latest":
+              raise SystemExit("config.yaml must pin an immutable image tag")
+
+          if cfg.get("legacy") is not True:
+              raise SystemExit("legacy: true is required for this upstream non-HA image")
+
+          if sorted(cfg["arch"]) != ["aarch64", "amd64"]:
+              raise SystemExit(f"Unexpected architectures: {cfg['arch']}")
+
+          if cfg.get("ingress") is not True or cfg.get("ingress_port") != 3000:
+              raise SystemExit("Ingress must be enabled on port 3000")
+
+          print(f"Validated OrcaSlicer app version {cfg['version']}.")
+          PY
+
+          version="$(
+            sed -nE 's/^version:[[:space:]]*"([^"]+)".*/\1/p'               orcaslicer/config.yaml
+          )"
+
+          image="lscr.io/linuxserver/orcaslicer:${version}"
+
+          docker buildx imagetools inspect "${image}" >/dev/null
+
+          raw="$(docker buildx imagetools inspect --raw "${image}")"
+
+          jq -e '
+            [.manifests[]?.platform |
+              select(.os == "linux") |
+              .architecture
+            ] |
+            (index("amd64") != null) and (index("arm64") != null)
+          ' <<<"${raw}" >/dev/null
+
+          echo "Verified ${image} for amd64 + arm64."

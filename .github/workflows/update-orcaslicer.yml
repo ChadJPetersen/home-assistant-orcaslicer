@@ -1,0 +1,143 @@
+name: Track upstream OrcaSlicer image
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: track-orcaslicer-upstream
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Update advertised app version
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Get latest LinuxServer.io OrcaSlicer release
+        id: upstream
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          release_json="$(
+            curl               --fail               --silent               --show-error               --location               -H "Accept: application/vnd.github+json"               -H "Authorization: Bearer ${GH_TOKEN}"               -H "X-GitHub-Api-Version: 2022-11-28"               "https://api.github.com/repos/linuxserver/docker-orcaslicer/releases/latest"
+          )"
+
+          latest="$(jq -r '.tag_name // empty' <<<"${release_json}")"
+
+          if [[ -z "${latest}" || "${latest}" == "null" ]]; then
+            echo "Unable to determine latest LinuxServer.io release tag."
+            exit 1
+          fi
+
+          current="$(
+            sed -nE 's/^version:[[:space:]]*"([^"]+)".*/\1/p'               orcaslicer/config.yaml
+          )"
+
+          if [[ -z "${current}" ]]; then
+            echo "Unable to read current Home Assistant app version."
+            exit 1
+          fi
+
+          echo "current=${current}" >> "${GITHUB_OUTPUT}"
+          echo "latest=${latest}" >> "${GITHUB_OUTPUT}"
+
+          if [[ "${current}" == "${latest}" ]]; then
+            echo "changed=false" >> "${GITHUB_OUTPUT}"
+          else
+            echo "changed=true" >> "${GITHUB_OUTPUT}"
+          fi
+
+          echo "Current repository version: ${current}"
+          echo "Latest upstream version:   ${latest}"
+
+      - name: Verify new container tag
+        if: steps.upstream.outputs.changed == 'true'
+        env:
+          VERSION: ${{ steps.upstream.outputs.latest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          image="lscr.io/linuxserver/orcaslicer:${VERSION}"
+          echo "Verifying ${image}"
+
+          docker buildx imagetools inspect "${image}" >/dev/null
+
+          raw="$(docker buildx imagetools inspect --raw "${image}")"
+
+          jq -e '
+            [.manifests[]?.platform |
+              select(.os == "linux") |
+              .architecture
+            ] |
+            (index("amd64") != null) and (index("arm64") != null)
+          ' <<<"${raw}" >/dev/null
+
+      - name: Update Home Assistant app metadata
+        if: steps.upstream.outputs.changed == 'true'
+        env:
+          OLD_VERSION: ${{ steps.upstream.outputs.current }}
+          NEW_VERSION: ${{ steps.upstream.outputs.latest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          sed -i -E             "s/^version:[[:space:]]*\"[^\"]+\"/version: \"${NEW_VERSION}\"/"             orcaslicer/config.yaml
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+
+          path = Path("orcaslicer/CHANGELOG.md")
+          old = os.environ["OLD_VERSION"]
+          new = os.environ["NEW_VERSION"]
+
+          text = path.read_text(encoding="utf-8") if path.exists() else "# Changelog\n"
+          heading = f"## {new}"
+
+          if heading not in text:
+              entry = (
+                  f"{heading}\n\n"
+                  f"- Upstream LinuxServer.io image changed from `{old}` to `{new}`.\n"
+                  f"- Home Assistant will now advertise `{new}` as an available app update.\n\n"
+              )
+              if text.startswith("# Changelog"):
+                  rest = text[len("# Changelog"):].lstrip("\n")
+                  text = "# Changelog\n\n" + entry + rest
+              else:
+                  text = "# Changelog\n\n" + entry + text
+
+              path.write_text(text, encoding="utf-8")
+          PY
+
+      - name: Commit repository metadata update
+        if: steps.upstream.outputs.changed == 'true'
+        env:
+          VERSION: ${{ steps.upstream.outputs.latest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add orcaslicer/config.yaml orcaslicer/CHANGELOG.md
+
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+            exit 0
+          fi
+
+          git commit -m "Update OrcaSlicer app metadata to ${VERSION}"
+          git push

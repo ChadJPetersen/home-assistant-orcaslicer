@@ -1,0 +1,56 @@
+name: "OrcaSlicer"
+version: "v2.4.2-ls42"
+slug: "orcaslicer"
+description: >-
+  Web-accessible OrcaSlicer using the official LinuxServer.io container,
+  with Home Assistant Ingress and upstream release tracking.
+url: "https://github.com/ChadJPetersen/home-assistant-orcaslicer"
+
+arch:
+  - amd64
+  - aarch64
+
+image: "lscr.io/linuxserver/orcaslicer"
+legacy: true
+init: false
+
+startup: application
+boot: auto
+stage: experimental
+timeout: 60
+
+ingress: true
+ingress_port: 3000
+ingress_stream: true
+panel_icon: "mdi:printer-3d-nozzle"
+panel_title: "OrcaSlicer"
+panel_admin: true
+
+# LinuxServer recommends a large /dev/shm for Selkies-based GUI containers.
+# Home Assistant Apps do not expose Docker's shm_size setting, so sharing the
+# host IPC namespace avoids Docker's small default shared-memory allocation.
+host_ipc: true
+
+map:
+  - type: data
+    read_only: false
+    path: /config
+  - type: share
+    read_only: false
+    path: /share
+
+environment:
+  TZ: "Etc/UTC"
+  TITLE: "OrcaSlicer"
+  START_DOCKER: "false"
+  HARDEN_DESKTOP: "true"
+  SELKIES_FILE_TRANSFERS: "upload,download"
+  SELKIES_FILE_MANAGER_PATH: "/config/Desktop"
+  SELKIES_AUDIO_ENABLED: "false|locked"
+  NO_GAMEPAD: "true"
+  NO_WEBCAM: "true"
+  NO_STEAM: "true"
+  DISABLE_IPV6: "true"
+
+backup: cold
+schema: false
