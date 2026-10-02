@@ -12,8 +12,8 @@ configuration:
   PIXELFLUX_WAYLAND:
     name: Use Wayland
     description: >-
-      Run the streamed desktop using Wayland. Set to false to use the X11 stack
-      if Wayland causes rendering or compatibility problems.
+      Run the streamed desktop using Wayland. OrcaSlicer's LinuxServer image currently
+      defaults to X11; enable this only if you specifically want to test Wayland.
   SELKIES_FRAMERATE:
     name: Initial stream frame rate
     description: >-
