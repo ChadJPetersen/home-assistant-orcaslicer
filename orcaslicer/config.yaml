@@ -11,13 +11,17 @@ arch:
   - aarch64
 
 image: "lscr.io/linuxserver/orcaslicer"
+# LinuxServer's image does not contain Home Assistant io.hass labels.
+# Legacy mode tells Supervisor to use this config.yaml as the app metadata.
+# It also maps scalar Home Assistant options into container environment variables,
+# which lets the Configuration tab control LinuxServer/Selkies settings directly.
 legacy: true
 init: false
 
 startup: application
 boot: auto
 stage: experimental
-timeout: 60
+timeout: 300
 
 ingress: true
 ingress_port: 3000
@@ -39,8 +43,10 @@ map:
     read_only: false
     path: /share
 
+# Fixed environment settings. User-adjustable scalar settings are under
+# options/schema below; legacy mode passes those options into the container
+# using the same names as environment variables.
 environment:
-  TZ: "Etc/UTC"
   TITLE: "OrcaSlicer"
   START_DOCKER: "false"
   HARDEN_DESKTOP: "true"
@@ -52,5 +58,18 @@ environment:
   NO_STEAM: "true"
   DISABLE_IPV6: "true"
 
+options:
+  PUID: 911
+  PGID: 911
+  PIXELFLUX_WAYLAND: "true"
+  SELKIES_FRAMERATE: 60
+  SELKIES_VIDEO_CRF: 25
+
+schema:
+  PUID: int(0,65535)
+  PGID: int(0,65535)
+  PIXELFLUX_WAYLAND: list(true|false)
+  SELKIES_FRAMERATE: int(8,240)
+  SELKIES_VIDEO_CRF: int(5,50)
+
 backup: cold
-schema: false

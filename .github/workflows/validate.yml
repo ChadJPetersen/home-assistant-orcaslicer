@@ -27,7 +27,12 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Validate YAML and image tag
+      - name: Run Home Assistant App Linter
+        uses: frenck/action-app-linter@v2
+        with:
+          path: "./orcaslicer"
+
+      - name: Validate upstream image and repository invariants
         shell: bash
         run: |
           set -euo pipefail
@@ -46,7 +51,8 @@ jobs:
 
           required = {
               "name", "version", "slug", "description",
-              "arch", "image", "ingress", "ingress_port"
+              "arch", "image", "ingress", "ingress_port",
+              "options", "schema"
           }
           missing = required - set(cfg)
           if missing:
