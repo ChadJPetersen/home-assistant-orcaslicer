@@ -18,8 +18,6 @@ image: "lscr.io/linuxserver/orcaslicer"
 legacy: true
 init: false
 
-startup: application
-boot: auto
 stage: experimental
 timeout: 300
 
@@ -28,7 +26,6 @@ ingress_port: 3000
 ingress_stream: true
 panel_icon: "mdi:printer-3d-nozzle"
 panel_title: "OrcaSlicer"
-panel_admin: true
 
 # LinuxServer recommends a large /dev/shm for Selkies-based GUI containers.
 # Home Assistant Apps do not expose Docker's shm_size setting, so sharing the
