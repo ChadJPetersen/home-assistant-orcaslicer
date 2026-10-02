@@ -58,7 +58,7 @@ environment:
 options:
   PUID: 911
   PGID: 911
-  PIXELFLUX_WAYLAND: "true"
+  PIXELFLUX_WAYLAND: "false"
   SELKIES_FRAMERATE: 60
   SELKIES_VIDEO_CRF: 25
 
