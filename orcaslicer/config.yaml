@@ -47,8 +47,14 @@ environment:
   TITLE: "OrcaSlicer"
   START_DOCKER: "false"
   HARDEN_DESKTOP: "true"
+
+  # Keep the hardened Selkies desktop while explicitly enabling its Files
+  # sidebar and browser upload/download support. Uploads land in /config/Desktop
+  # and therefore persist across app restarts and upgrades.
   SELKIES_FILE_TRANSFERS: "upload,download"
-  SELKIES_FILE_MANAGER_PATH: "/config/Desktop"
+  SELKIES_UI_SIDEBAR_SHOW_FILES: "true"
+  FILE_MANAGER_PATH: "/config/Desktop"
+
   SELKIES_AUDIO_ENABLED: "false|locked"
   NO_GAMEPAD: "true"
   NO_WEBCAM: "true"

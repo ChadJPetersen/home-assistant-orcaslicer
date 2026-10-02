@@ -8,6 +8,20 @@ OrcaSlicer configuration is persisted under `/config`.
 
 The Home Assistant `/share` directory is available inside OrcaSlicer at `/share`.
 
+## Uploading STL / 3MF files
+
+Direct browser upload is enabled by default.
+
+Open the Selkies sidebar in the OrcaSlicer Web UI and use **Files → Upload**, or drag a
+file onto the streamed desktop. Uploaded files are stored in:
+
+`/config/Desktop`
+
+That directory is persistent, so uploaded models survive app restarts and upgrades.
+
+The Home Assistant `/share` directory remains available as an optional shared-storage
+location, but you do not need to move models there before importing them into OrcaSlicer.
+
 ## Configuration
 
 The Home Assistant **Configuration** tab exposes a small set of settings that map
@@ -49,8 +63,9 @@ then changes the version advertised by this repository.
 
 ## Loading models from your phone
 
-Use the Selkies file-transfer interface to upload STL/3MF files, or place models in
-Home Assistant's `/share` directory.
+Use **Files → Upload** in the Selkies sidebar, or drag/drop the STL/3MF into the browser
+session. The file will appear under `/config/Desktop` and can then be opened directly
+from OrcaSlicer.
 
 ## Klipper printers
 
