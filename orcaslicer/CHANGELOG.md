@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.4.2-ls43
+
+- Upstream LinuxServer.io image changed from `v2.4.2-ls42` to `v2.4.2-ls43`.
+- Home Assistant will now advertise `v2.4.2-ls43` as an available app update.
+
 ## v2.4.2-ls42
 
 - Initial Home Assistant App release.
