@@ -67,3 +67,19 @@ This repository includes a separate **monthly Codex coding agent** (on the **4th
 The scheduled workflow runs without changes if no relevant feature is identified or if the API key is not configured. API use may incur separate charges. Its AI editing job has no repository write credentials, and a separate job limits file changes and opens a reviewable PR.
 
 See [workflow](.github/workflows/monthly-home-assistant-agent.yml) and [agent instructions](.github/prompts/monthly-ha-compatibility.md). Existing OrcaSlicer upstream image update tracking continues to operate independently.
+
+## Home Assistant app icon and logo
+
+The app includes OrcaSlicer's official mark as a **128×128 icon** and a
+**250×100 logo**. Home Assistant reads `orcaslicer/icon.png` and
+`orcaslicer/logo.png` from the custom app repository. Assets are generated
+reproducibly from upstream's SVG source using
+[`scripts/generate_branding.py`](scripts/generate_branding.py).
+
+To see the artwork: open **Settings → Apps → App Store → ⋮ → Check for updates**
+(or **Reload**, depending on your Home Assistant version), then refresh the
+browser. Branding is **app repository metadata** and does *not* require a
+new LinuxServer image tag, reinstalling the app, or changing the running
+OrcaSlicer container. The existing `v2.4.2-ls46` pin stays unchanged.
+
+Official source and credits: [.github/branding](.github/branding/README.md).
