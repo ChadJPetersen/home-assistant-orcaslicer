@@ -2,6 +2,8 @@
 
 ## v2.4.2-ls46
 
+- Added OrcaSlicer's official icon and logo to the Home Assistant app store and app details (repository artwork only; no container/image version change required).
+
 - Upstream LinuxServer.io image changed from `v2.4.2-ls45` to `v2.4.2-ls46`.
 - Home Assistant will now advertise `v2.4.2-ls46` as an available app update.
 
