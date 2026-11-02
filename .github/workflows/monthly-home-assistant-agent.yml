@@ -72,7 +72,7 @@ jobs:
           git add -N orcaslicer README.md repository.yaml || true
           git diff --binary -- orcaslicer README.md repository.yaml > /tmp/ha-update.patch
           test -s /tmp/ha-update.patch && echo "has_patch=true" >> "$GITHUB_OUTPUT" || echo "has_patch=false" >> "$GITHUB_OUTPUT"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: steps.diff.outputs.has_patch == 'true'
         with:
           name: compatibility-patch
