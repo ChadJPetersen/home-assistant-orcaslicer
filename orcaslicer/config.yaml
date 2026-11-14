@@ -1,5 +1,5 @@
 name: "OrcaSlicer"
-version: "v2.5.0-ls49"
+version: "v2.5.0-ls50"
 slug: "orcaslicer"
 description: >-
   Web-accessible OrcaSlicer using the official LinuxServer.io container,
