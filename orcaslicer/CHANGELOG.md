@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.5.1-ls51
+
+- Upstream LinuxServer.io image changed from `v2.5.0-ls50` to `v2.5.1-ls51`.
+- Home Assistant will now advertise `v2.5.1-ls51` as an available app update.
+
 ## v2.5.0-ls50
 
 - Upstream LinuxServer.io image changed from `v2.5.0-ls49` to `v2.5.0-ls50`.
